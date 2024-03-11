@@ -1,0 +1,23 @@
+2024-02-17T07:07:48.898Z [test] info: listening on port 5010
+2024-02-17T07:08:27.297Z [test] error: Incorrect integer value: 'undefined' for column 'StoppageID' at row 1
+2024-02-17T07:11:40.409Z [test] info: listening on port 5010
+2024-02-17T07:11:43.821Z [test] info: listening on port 5010
+2024-02-17T07:11:45.329Z [test] info: listening on port 5010
+2024-02-17T07:12:09.661Z [test] info: listening on port 5010
+2024-02-17T07:12:12.475Z [test] info: listening on port 5010
+2024-02-17T07:12:46.069Z [test] error: Incorrect integer value: 'undefined' for column 'StoppageID' at row 1
+2024-02-17T07:13:49.705Z [test] info: listening on port 5010
+2024-02-17T07:13:50.714Z [test] info: listening on port 5010
+2024-02-17T07:13:58.868Z [test] info: listening on port 5010
+2024-02-17T07:14:35.819Z [test] info: listening on port 5010
+2024-02-17T07:18:41.598Z [test] info: listening on port 5010
+2024-02-17T07:18:45.507Z [test] info: listening on port 5010
+2024-02-17T07:22:39.849Z [test] info: listening on port 5010
+2024-02-17T07:22:50.250Z [test] info: listening on port 5010
+2024-02-17T07:23:34.184Z [test] info: listening on port 5010
+2024-02-17T07:23:43.890Z [test] info: listening on port 5010
+2024-02-17T07:23:54.554Z [test] info: listening on port 5010
+2024-02-17T07:23:56.515Z [test] info: listening on port 5010
+2024-02-17T07:24:06.092Z [test] info: listening on port 5010
+2024-02-17T07:28:00.518Z [test] info: listening on port 5010
+2024-02-17T07:28:02.966Z [test] info: listening on port 5010

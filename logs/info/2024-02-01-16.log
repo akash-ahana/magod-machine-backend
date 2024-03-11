@@ -1,0 +1,13 @@
+2024-02-01T10:49:03.924Z [test] info: listening on port 5010
+2024-02-01T10:50:31.183Z [test] info: Login Success - anil
+2024-02-01T10:50:48.231Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:52:50.041Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:54:56.401Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:56:05.768Z [test] info: Login Success - anil
+2024-02-01T10:56:16.126Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:56:36.166Z [test] info: listening on port 5010
+2024-02-01T11:02:47.285Z [test] info: listening on port 5010
+2024-02-01T11:03:11.196Z [test] error: Table 'magodmis.shopfloor_part_issueregister' doesn't exist
+2024-02-01T11:15:18.024Z [test] info: listening on port 5010
+2024-02-01T11:27:46.726Z [test] info: listening on port 5010
+2024-02-01T11:27:52.356Z [test] info: listening on port 5010

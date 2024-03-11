@@ -1,0 +1,26 @@
+2024-03-05T10:34:50.351Z [test] info: listening on port 5010
+2024-03-05T10:35:01.590Z [test] info: listening on port 5010
+2024-03-05T10:35:05.901Z [test] info: listening on port 5010
+2024-03-05T10:38:50.492Z [test] info: listening on port 5010
+2024-03-05T10:38:55.924Z [test] info: listening on port 5010
+2024-03-05T10:39:02.135Z [test] info: listening on port 5010
+2024-03-05T10:39:03.940Z [test] info: listening on port 5010
+2024-03-05T10:39:08.597Z [test] info: listening on port 5010
+2024-03-05T10:39:11.283Z [test] info: listening on port 5010
+2024-03-05T10:39:17.703Z [test] info: listening on port 5010
+2024-03-05T10:39:21.559Z [test] info: listening on port 5010
+2024-03-05T10:39:24.242Z [test] info: listening on port 5010
+2024-03-05T10:39:26.732Z [test] info: listening on port 5010
+2024-03-05T10:39:48.139Z [test] info: listening on port 5010
+2024-03-05T10:39:51.450Z [test] info: listening on port 5010
+2024-03-05T10:39:59.739Z [test] info: listening on port 5010
+2024-03-05T10:40:43.953Z [test] info: listening on port 5010
+2024-03-05T10:40:48.959Z [test] info: listening on port 5010
+2024-03-05T10:40:51.922Z [test] info: listening on port 5010
+2024-03-05T10:41:56.439Z [test] error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''Laser 11' at line 1
+2024-03-05T10:42:31.236Z [test] info: listening on port 5010
+2024-03-05T10:42:54.410Z [test] error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''Laser 11' at line 1
+2024-03-05T10:43:50.018Z [test] info: listening on port 5010
+2024-03-05T10:47:08.335Z [test] info: listening on port 5010
+2024-03-05T10:47:15.511Z [test] info: listening on port 5010
+2024-03-05T10:50:02.431Z [test] info: listening on port 5016

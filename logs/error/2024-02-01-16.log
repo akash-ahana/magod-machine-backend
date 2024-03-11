@@ -1,0 +1,5 @@
+2024-02-01T10:50:48.231Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:52:50.041Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:54:56.401Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:56:16.126Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T11:03:11.196Z [test] error: Table 'magodmis.shopfloor_part_issueregister' doesn't exist

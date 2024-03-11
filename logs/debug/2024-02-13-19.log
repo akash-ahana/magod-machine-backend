@@ -1,0 +1,8 @@
+2024-02-13T13:48:58.347Z [test] info: listening on port 5010
+2024-02-13T13:49:00.826Z [test] info: listening on port 5010
+2024-02-13T13:49:02.366Z [test] info: listening on port 5010
+2024-02-13T13:49:07.515Z [test] info: listening on port 5010
+2024-02-13T13:49:09.964Z [test] info: listening on port 5010
+2024-02-13T13:49:13.243Z [test] info: listening on port 5010
+2024-02-13T13:49:14.931Z [test] info: listening on port 5010
+2024-02-13T14:11:02.692Z [test] error: Table 'magodmis.shopfloor_part_issueregister' doesn't exist
