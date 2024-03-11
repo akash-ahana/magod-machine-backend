@@ -21,6 +21,9 @@ app.use("/ShiftOperator", ShiftOperator);
 const printLabel = require('./routes/machine/PrintLabel');
 app.use("/printLabel", printLabel);
 
+const userRouter = require('./routes/machine/user');
+app.use("/user", userRouter);
+
  
 app.use((err, req, res, next) => {
     res.status(err.status || 500);

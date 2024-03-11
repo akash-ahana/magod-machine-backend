@@ -1,0 +1,8 @@
+2024-02-01T07:30:53.785Z [test] info: listening on port 5010
+2024-02-01T07:31:08.377Z [test] info: listening on port 5010
+2024-02-01T07:31:12.396Z [test] info: listening on port 5010
+2024-02-01T07:33:10.398Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T07:36:08.733Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T07:37:21.607Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T07:44:40.044Z [test] info: listening on port 5010
+2024-02-01T07:48:29.119Z [test] info: listening on port 5010
