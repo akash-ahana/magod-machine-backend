@@ -1,0 +1,41 @@
+2024-03-18T07:31:04.615Z [test] info: listening on port 5010
+2024-03-18T07:31:19.565Z [test] error: Status Code : undefined  - Error : Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials nc16-20020a17090b37d000b0029bb5a95a3csm6919774pjb.55 - gsmtp
+2024-03-18T07:31:51.435Z [test] info: listening on port 5010
+2024-03-18T07:31:58.175Z [test] info: listening on port 5010
+2024-03-18T07:31:59.959Z [test] info: listening on port 5010
+2024-03-18T07:32:04.751Z [test] info: listening on port 5010
+2024-03-18T07:32:16.225Z [test] error: Status Code : undefined  - Error : Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials iq3-20020a17090afb4300b0029bb8ebdc23sm7077282pjb.37 - gsmtp
+2024-03-18T07:33:32.761Z [test] info: listening on port 5010
+2024-03-18T07:35:05.385Z [test] info: listening on port 5010
+2024-03-18T07:35:13.570Z [test] info: listening on port 5010
+2024-03-18T07:35:25.294Z [test] info: listening on port 5010
+2024-03-18T07:35:33.509Z [test] info: listening on port 5010
+2024-03-18T07:35:43.421Z [test] info: listening on port 5010
+2024-03-18T07:35:53.289Z [test] info: listening on port 5010
+2024-03-18T07:35:58.679Z [test] info: listening on port 5010
+2024-03-18T07:36:09.744Z [test] info: listening on port 5010
+2024-03-18T07:36:24.302Z [test] info: listening on port 5010
+2024-03-18T07:36:34.111Z [test] info: listening on port 5010
+2024-03-18T07:36:57.288Z [test] info: listening on port 5010
+2024-03-18T07:37:04.951Z [test] info: listening on port 5010
+2024-03-18T07:37:11.859Z [test] info: listening on port 5010
+2024-03-18T07:37:13.711Z [test] info: listening on port 5010
+2024-03-18T07:37:22.130Z [test] info: listening on port 5010
+2024-03-18T07:37:35.107Z [test] info: listening on port 5010
+2024-03-18T07:37:47.670Z [test] info: listening on port 5010
+2024-03-18T07:37:51.662Z [test] info: listening on port 5010
+2024-03-18T07:37:57.277Z [test] info: listening on port 5010
+2024-03-18T07:38:02.672Z [test] info: listening on port 5010
+2024-03-18T07:38:07.198Z [test] info: listening on port 5010
+2024-03-18T07:38:10.540Z [test] info: listening on port 5010
+2024-03-18T07:38:16.465Z [test] info: listening on port 5010
+2024-03-18T07:38:18.209Z [test] info: listening on port 5010
+2024-03-18T07:38:20.537Z [test] info: listening on port 5010
+2024-03-18T07:39:24.699Z [test] info: listening on port 5010
+2024-03-18T07:39:31.281Z [test] info: listening on port 5010
+2024-03-18T07:39:33.989Z [test] info: listening on port 5010
+2024-03-18T07:39:44.682Z [test] info: listening on port 5010
+2024-03-18T07:39:46.406Z [test] info: listening on port 5010
+2024-03-18T07:39:49.951Z [test] info: listening on port 5010
