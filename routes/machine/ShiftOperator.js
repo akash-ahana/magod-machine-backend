@@ -11,6 +11,8 @@ const {
 const { logger } = require("../../helpers/logger");
 var bodyParser = require("body-parser");
 const moment = require("moment");
+const nodemailer = require('nodemailer');
+const { response } = require("express");
 
 // create application/json parser
 var jsonParser = bodyParser.json();
@@ -47,7 +49,6 @@ ShiftOperator.post("/getShiftDetails", jsonParser, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-
   // res.send(res)
 });
 
@@ -128,6 +129,18 @@ ShiftOperator.post("/ProcessTaskStatus", jsonParser, async (req, res, next) => {
 });
 
 //Insert Error
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: 'veerannab97@gmail.com',
+    pass: 'csyutorcceoevmdl'
+  }
+});
+
+
+
 ShiftOperator.post("/errorForm", jsonParser, async (req, res, next) => {
   // console.log(req.body,"/error form");
   try {
@@ -178,8 +191,8 @@ ShiftOperator.post("/errorForm", jsonParser, async (req, res, next) => {
 
     // Insert new row into magodmis.shiftlogbook
     const insertResult = await mchQueryMod1(`
-      INSERT INTO magodmis.shiftlogbook (ShiftId, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl,Remarks)
-      VALUES ('${req.body.selectshifttable.ShiftID}','${req.body.formValues.machine}', '${req.body.formValues.errorDescription}', '${req.body.formValues.errorNo}', '${req.body.formValues.errorNo}', '${req.body.formValues.operator}','${req.body.formValues.errorNo}', NOW(), NOW(), ${count},'${req.body.formValues.errorDescription}');
+      INSERT INTO magodmis.shiftlogbook (ShiftId, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl,Remarks,actiontaken)
+      VALUES ('${req.body.selectshifttable.ShiftID}','${req.body.formValues.machine}', '${req.body.formValues.errorDescription}', '${req.body.formValues.errorNo}', '${req.body.formValues.errorNo}', '${req.body.formValues.operator}','${req.body.formValues.errorNo}', NOW(), NOW(), ${count},'${req.body.formValues.errorDescription}','${req.body.formValues.actionTaken}');
     `);
 
     // Insert into machine_errorlog
@@ -188,11 +201,23 @@ ShiftOperator.post("/errorForm", jsonParser, async (req, res, next) => {
       VALUES ('${req.body.formValues.machine}', now(), '${req.body.formValues.errorNo}', '${req.body.formValues.errorDescription}', '${req.body.formValues.actionTaken}', '${req.body.formValues.operator}');
     `);
 
+    // // Send email
+    // const mailOptions = {
+    //   from: '"Prakz" <veerannab97@gmail.com>',
+    //   to: 'prakruthiholla1999@gmail.com', // Add your recipient emails here
+    //   subject: 'Error Report',
+    //   text: `Hi,\n\nError No: ${req.body.formValues.errorNo}\nError Description: ${req.body.formValues.errorDescription}\nAction Taken: ${req.body.formValues.actionTaken}`
+    // };
+
+    // await transporter.sendMail(mailOptions);
+
     res.send(insertResult);
   } catch (error) {
     next(error);
   }
 });
+
+
 
 ///SHIFT SUMMARY
 ShiftOperator.post("/ShiftSummary", jsonParser, async (req, res, next) => {
@@ -218,6 +243,8 @@ ShiftOperator.post("/ShiftSummary", jsonParser, async (req, res, next) => {
     next(error);
   }
 });
+
+
 
 //Stoppage Reason List
 ShiftOperator.get("/stoppageList", jsonParser, async (req, res, next) => {
@@ -365,7 +392,7 @@ ShiftOperator.post("/addStoppage", jsonParser, async (req, res, next) => {
 
 //ADD stoppage with Task No
 ShiftOperator.post("/addStoppageTaskNo", jsonParser, async (req, res, next) => {
-  console.log("req.body", req.body);
+  // console.log("req.body", req.body);
   const updateQuery = `
     UPDATE machine_data.machinestatus
     SET NCProgarmNo = '${req.body.selectedStoppage}',
@@ -507,6 +534,7 @@ ShiftOperator.post("/MachineTasksData", jsonParser, async (req, res, next) => {
           console.log(error);
         } else {
           res.send(data);
+          // console.log("result is",data);
         }
       }
     );
@@ -523,7 +551,7 @@ ShiftOperator.post(
     // console.log('MachineTasksProfile', req.body);
     try {
       mchQueryMod(
-        `Select * From Magodmis.ncprogrammtrlallotmentlist n WHERE n.NCId='${req.body.NCId}' ORDER BY n.ncpgmmtrlid`,
+        `Select * From magodmis.ncprogrammtrlallotmentlist n WHERE n.NCId='${req.body.NCId}' ORDER BY n.ncpgmmtrlid`,
         (err, data) => {
           if (err) {
             logger.error(err);
@@ -880,7 +908,7 @@ ShiftOperator.post(
   "/markAsUsedProductionReport",
   jsonParser,
   async (req, res, next) => {
-    console.log("req.body", req.body);
+    // console.log("req.body", req.body);
     try {
       // Start a database transaction
       await executeQuery("START TRANSACTION");
@@ -1043,43 +1071,66 @@ ShiftOperator.post("/getprogramParts", jsonParser, async (req, res, next) => {
 
 ////Proram Parts(MiddleSection)
 ShiftOperator.post("/SaveprogramParts", jsonParser, async (req, res, next) => {
-  // console.log('SaveprogramParts', req.body);
+  // console.log("SaveprogramParts",req.body);
   try {
-    mchQueryMod(
-      `UPDATE Magodmis.Ncprogram_partslist SET QtyRejected ='${req.body.programPatsSelectedRow.QtyRejected}', Remarks='${req.body.programPatsSelectedRow.Remarks}' WHERE NC_Pgme_part_Id='${req.body.programPatsSelectedRow.NC_Pgme_Part_ID}';
-    `,
-      (err, data) => {
-        if (err) {
-          logger.error(err);
-          // res.status(500).send('Internal Server Error');
-          console.log(error);
-        } else {
-          res.send(data);
+    const programPartsData = req.body.programPartsData;
+    const responses = []; // Array to store responses
+
+    // Iterate over each item in programPartsData
+    for (const part of programPartsData) {
+      const NC_Pgme_Part_ID = part.NC_Pgme_Part_ID;
+      const QtyRejected = part.QtyRejected;
+      const Remarks = part.Remarks;
+
+      // Execute the SQL query for each item
+      mchQueryMod(
+        `UPDATE Magodmis.Ncprogram_partslist SET QtyRejected ='${QtyRejected}', Remarks='${Remarks}' WHERE NC_Pgme_part_Id='${NC_Pgme_Part_ID}';`,
+        (err, data) => {
+          if (err) {
+            logger.error(err);
+            responses.push({ error: err }); // Store error response
+          } else {
+            responses.push({ success: data }); // Store success response
+          }
+
+          // Check if all queries have been executed
+          if (responses.length === programPartsData.length) {
+            // Send response after all queries are executed
+            res.send(responses);
+          }
         }
-      }
-    );
+      );
+    }
   } catch (error) {
     next(error);
   }
 });
 
-//Program  Reports Part Details Save Button
-ShiftOperator.post(
-  "/SaveprogramDetails",
-  jsonParser,
-  async (req, res, next) => {
-    // console.log('SaveprogramParts', req.body);
-    try {
-      // Update Magodmis.Ncprogram_partslist
-      await mchQueryMod(`
-      UPDATE Magodmis.Ncprogram_partslist
-      SET QtyRejected = '${req.body.partDetailsRowSelect.QtyRejected}',
-          Remarks='${req.body.partDetailsRowSelect.Remarks}'
-      WHERE NC_Pgme_part_Id='${req.body.partDetailsRowSelect.nc_pgme_part_id}';
-    `);
 
-      // Additional Step: Update magodmis.ncprograms
-      const updateNcProgramsQuery = `
+
+//Program  Reports Part Details Save Button
+ShiftOperator.post("/SaveprogramDetails", jsonParser, async (req, res, next) => {
+  // console.log("SaveprogramDetails is",req.body);
+  try {
+    const partDetailsData = req.body.partDetailsData;
+
+    // Iterate over each element in partDetailsData
+    for (const part of partDetailsData) {
+      const NC_Pgme_part_ID = part.nc_pgme_part_id;
+      const QtyRejected = part.QtyRejected;
+      const Remarks = part.Remarks;
+
+      // Update Magodmis.Ncprogram_partslist for each element
+      await mchQueryMod1(`
+        UPDATE Magodmis.Ncprogram_partslist
+        SET QtyRejected = '${QtyRejected}',
+            Remarks='${Remarks}'
+        WHERE NC_Pgme_part_Id='${NC_Pgme_part_ID}';
+      `);
+    }
+
+    // Additional Step: Update magodmis.ncprograms
+    const updateNcProgramsQuery = `
       UPDATE magodmis.ncprograms n
       JOIN (
         SELECT n.Ncid, SUM(TIMESTAMPDIFF(MINUTE, s.FromTime, s.ToTime)) AS MachineTime 
@@ -1093,15 +1144,16 @@ ShiftOperator.post(
       SET n.ActualTime = A.MachineTime
       WHERE A.ncid = n.Ncid;`;
 
-      await mchQueryMod(updateNcProgramsQuery);
+    // Execute the updateNcProgramsQuery
+    await mchQueryMod1(updateNcProgramsQuery);
 
-      res.send("Successfully updated program details");
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("Internal Server Error");
-    }
+    res.send("Successfully updated program details");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
-);
+});
+
 
 /////Mark as Completed
 ShiftOperator.post("/programCompleted", jsonParser, async (req, res, next) => {
@@ -1131,7 +1183,7 @@ ShiftOperator.post("/onClickYes", jsonParser, async (req, res, next) => {
     // New mchQueryMod block to perform SELECT operation
     mchQueryMod(
       `
-SELECT * FROM magodmis.shiftlogbook 
+      SELECT * FROM magodmis.shiftlogbook 
       WHERE Machine='${req.body.selectshifttable.Machine}' 
       ORDER BY ShiftLogId DESC 
       LIMIT 1;
@@ -1153,7 +1205,7 @@ SELECT * FROM magodmis.shiftlogbook
         mchQueryMod(
           `
         UPDATE magodmis.shiftlogbook 
-        SET ToTime=now() 
+        SET ToTime='${req.body.selectshifttable.FromTime}'
         WHERE ShiftLogId='${lastRow.ShiftLogId}';
       `,
           (updateToTimeErr, updateToTimeResult) => {
@@ -1217,106 +1269,114 @@ SELECT * FROM magodmis.shiftlogbook
 });
 
 //for Stoppage
-ShiftOperator.post("/onClickYesStoppage", jsonParser, async (req, res, next) => {
-  try {
+ShiftOperator.post(
+  "/onClickYesStoppage",
+  jsonParser,
+  async (req, res, next) => {
+    try {
       mchQueryMod(
-          `
+        `
           SELECT * FROM magodmis.shiftlogbook 
           WHERE Machine='${req.body.selectshifttable.Machine}' 
           ORDER BY ShiftLogId DESC 
           LIMIT 1;
           `,
-          (selectErr, selectResult) => {
-              if (selectErr) {
-                  logger.error(selectErr);
-                  return res.status(500).send("Internal Server Error");
-              }
+        (selectErr, selectResult) => {
+          if (selectErr) {
+            logger.error(selectErr);
+            return res.status(500).send("Internal Server Error");
+          }
 
-              if (selectResult.length === 0) {
-                  return res.status(404).send("No matching record found");
-              }
+          if (selectResult.length === 0) {
+            return res.status(404).send("No matching record found");
+          }
 
-              const lastRow = selectResult[0];
-              // console.log("ShiftLogId is", lastRow.ShiftLogId);
+          const lastRow = selectResult[0];
+          // console.log("ShiftLogId is", lastRow.ShiftLogId);
 
-              // Update the ToTime of the last row in magodmis.shiftlogbook
-              mchQueryMod(
-                  `
+          // Update the ToTime of the last row in magodmis.shiftlogbook
+          mchQueryMod(
+            `
                   UPDATE magodmis.shiftlogbook 
-                  SET ToTime=now() 
+                  SET ToTime='${req.body.selectshifttable.FromTime}' 
                   WHERE ShiftLogId='${lastRow.ShiftLogId}';
                   `,
-                  (updateToTimeErr, updateToTimeResult) => {
-                      if (updateToTimeErr) {
-                          logger.error(updateToTimeErr);
-                          return res.status(500).send("Internal Server Error");
-                      }
+            (updateToTimeErr, updateToTimeResult) => {
+              if (updateToTimeErr) {
+                logger.error(updateToTimeErr);
+                return res.status(500).send("Internal Server Error");
+              }
 
-                      // Continue with the existing mchQueryMod block for INSERT operation
-                      mchQueryMod(
-                          `SELECT COUNT(*) FROM magodmis.shiftlogbook WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
-                          (err, countResult) => {
-                              if (err) {
-                                  logger.error(err);
-                                  res.status(500).send("Internal Server Error");
+              // Continue with the existing mchQueryMod block for INSERT operation
+              mchQueryMod(
+                `SELECT COUNT(*) FROM magodmis.shiftlogbook WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
+                (err, countResult) => {
+                  if (err) {
+                    logger.error(err);
+                    res.status(500).send("Internal Server Error");
+                  } else {
+                    const count = countResult[0]["COUNT(*)"];
+
+                    mchQueryMod(
+                      `INSERT INTO magodmis.shiftlogbook (ShiftID, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl) VALUES ('${
+                        req.body.selectshifttable.ShiftID
+                      }', '${req.body.selectshifttable.Machine}', '${
+                        req.body.requiredProgram[0].MProcess
+                      }', '${req.body.requiredProgram[0].TaskNo}', '${
+                        req.body.requiredProgram[0].NCProgarmNo
+                      }', '${req.body.selectshifttable.Operator}', '${
+                        req.body.requiredProgram[0].StopID
+                      }','${req.body.selectshifttable.FromTime}', now(), ${
+                        count + 1
+                      })`,
+                      (insertErr, data) => {
+                        if (insertErr) {
+                          logger.error(insertErr);
+                          res.status(500).send("Internal Server Error");
+                        } else {
+                          // Now, perform the update operation
+                          mchQueryMod(
+                            `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}', ShiftStartTime='${req.body.selectshifttable.FromTime}', ShiftFinishTime='${req.body.selectshifttable.ToTime}',ShiftID='${req.body.selectshifttable.ShiftID}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
+                            (updateErr, updateData) => {
+                              if (updateErr) {
+                                logger.error(updateErr);
+                                res.status(500).send("Internal Server Error");
                               } else {
-                                  const count = countResult[0]["COUNT(*)"];
-
-                                  mchQueryMod(
-                                      `INSERT INTO magodmis.shiftlogbook (ShiftID, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl) VALUES ('${
-                                      req.body.selectshifttable.ShiftID
-                                      }', '${req.body.selectshifttable.Machine}', '${
-                                      req.body.requiredProgram[0].MProcess
-                                      }', '${req.body.requiredProgram[0].TaskNo}', '${
-                                      req.body.requiredProgram[0].NCProgarmNo
-                                      }', '${req.body.selectshifttable.Operator}', '${
-                                      req.body.requiredProgram[0].StopID
-                                      }','${req.body.selectshifttable.FromTime}', now(), ${
-                                      count + 1
-                                      })`,
-                                      (insertErr, data) => {
-                                          if (insertErr) {
-                                              logger.error(insertErr);
-                                              res.status(500).send("Internal Server Error");
-                                          } else {
-                                              // Now, perform the update operation
-                                              mchQueryMod(
-                                                  `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}', ShiftStartTime='${req.body.selectshifttable.FromTime}', ShiftFinishTime='${req.body.selectshifttable.ToTime}',ShiftID='${req.body.selectshifttable.ShiftID}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
-                                                  (updateErr, updateData) => {
-                                                      if (updateErr) {
-                                                          logger.error(updateErr);
-                                                          res.status(500).send("Internal Server Error");
-                                                      } else {
-                                                          // Continue with the insertion operation for shiftstoppagelist
-                                                          mchQueryMod(
-                                                              `INSERT INTO magodmis.shiftstoppagelist (ShiftID,Operator,Srl, StoppageID, StoppageReason, StoppageHead, Machine, FromTime, ToTime, Remarks, Locked,ShiftLogId) VALUES('${req.body.selectshifttable.ShiftID}', '${req.body.selectshifttable.Operator}', '0', '${lastRow.StoppageID}', '${req.body.requiredProgram[0].NCProgarmNo}','${lastRow.StoppageID}', '${req.body.selectshifttable.Machine}', '${req.body.selectshifttable.FromTime}', NOW(), '', '0', '${req.body.selectshifttable.ShiftID}')`,
-                                                              (stoppageInsertErr, stoppageData) => {
-                                                                  if (stoppageInsertErr) {
-                                                                      logger.error(stoppageInsertErr);
-                                                                      res.status(500).send("Internal Server Error");
-                                                                  } else {
-                                                                      res.send({ insertData: data, updateData });
-                                                                  }
-                                                              }
-                                                          );
-                                                      }
-                                                  }
-                                              );
-                                          }
-                                      }
-                                  );
+                                // Continue with the insertion operation for shiftstoppagelist
+                                mchQueryMod(
+                                  `INSERT INTO magodmis.shiftstoppagelist (ShiftID,Operator,Srl, StoppageID, StoppageReason, StoppageHead, Machine, FromTime, ToTime, Remarks, Locked,ShiftLogId) VALUES('${req.body.selectshifttable.ShiftID}', '${req.body.selectshifttable.Operator}', '0', '${lastRow.StoppageID}', '${req.body.requiredProgram[0].NCProgarmNo}','${lastRow.StoppageID}', '${req.body.selectshifttable.Machine}', '${req.body.selectshifttable.FromTime}', NOW(), '', '0', '${req.body.selectshifttable.ShiftID}')`,
+                                  (stoppageInsertErr, stoppageData) => {
+                                    if (stoppageInsertErr) {
+                                      logger.error(stoppageInsertErr);
+                                      res
+                                        .status(500)
+                                        .send("Internal Server Error");
+                                    } else {
+                                      res.send({
+                                        insertData: data,
+                                        updateData,
+                                      });
+                                    }
+                                  }
+                                );
                               }
-                          }
-                      );
+                            }
+                          );
+                        }
+                      }
+                    );
                   }
+                }
               );
-          }
+            }
+          );
+        }
       );
-  } catch (error) {
+    } catch (error) {
       next(error);
+    }
   }
-});
-
+);
 
 ShiftOperator.post("/onClickNo", jsonParser, async (req, res, next) => {
   // console.log("req.body.selectshifttable is",req.body.selectshifttable);
@@ -1346,7 +1406,7 @@ ShiftOperator.post("/onClickNo", jsonParser, async (req, res, next) => {
         mchQueryMod(
           `
         UPDATE magodmis.shiftlogbook 
-        SET ToTime=now() 
+        SET ToTime='${req.body.selectshifttable.FromTime}'
         WHERE ShiftLogId='${lastRow.ShiftLogId}';
       `,
           (updateToTimeErr, updateToTimeResult) => {
@@ -1411,102 +1471,103 @@ ShiftOperator.post("/onClickNo", jsonParser, async (req, res, next) => {
 //No with Stoppage
 ShiftOperator.post("/onClickNoStoppage", jsonParser, async (req, res, next) => {
   try {
-      // Select the last row and update ToTime in magodmis.shiftlogbook
-      mchQueryMod(
-          `
+    // Select the last row and update ToTime in magodmis.shiftlogbook
+    mchQueryMod(
+      `
           SELECT * FROM magodmis.shiftlogbook 
           WHERE Machine='${req.body.selectshifttable.Machine}' 
           ORDER BY ShiftLogId DESC 
           LIMIT 1;
           `,
-          (selectErr, selectResult) => {
-              if (selectErr) {
-                  logger.error(selectErr);
-                  return res.status(500).send("Internal Server Error");
-              }
+      (selectErr, selectResult) => {
+        if (selectErr) {
+          logger.error(selectErr);
+          return res.status(500).send("Internal Server Error");
+        }
 
-              if (selectResult.length === 0) {
-                  return res.status(404).send("No matching record found");
-              }
+        if (selectResult.length === 0) {
+          return res.status(404).send("No matching record found");
+        }
 
-              const lastRow = selectResult[0];
+        const lastRow = selectResult[0];
 
-              // Update the ToTime of the last row in magodmis.shiftlogbook
-              mchQueryMod(
-                  `
+        // Update the ToTime of the last row in magodmis.shiftlogbook
+        mchQueryMod(
+          `
                   UPDATE magodmis.shiftlogbook 
-                  SET ToTime=now() 
+                  SET ToTime='${req.body.selectshifttable.FromTime}'
                   WHERE ShiftLogId='${lastRow.ShiftLogId}';
                   `,
-                  (updateToTimeErr, updateToTimeResult) => {
-                      if (updateToTimeErr) {
-                          logger.error(updateToTimeErr);
-                          return res.status(500).send("Internal Server Error");
-                      }
+          (updateToTimeErr, updateToTimeResult) => {
+            if (updateToTimeErr) {
+              logger.error(updateToTimeErr);
+              return res.status(500).send("Internal Server Error");
+            }
 
-                      // Continue with the existing code (INSERT and UPDATE operations)
-                      mchQueryMod(
-                          `SELECT COUNT(*) FROM magodmis.shiftlogbook WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
-                          (err, countResult) => {
-                              if (err) {
-                                  logger.error(err);
-                                  res.status(500).send("Internal Server Error");
-                              } else {
-                                  const count = countResult[0]["COUNT(*)"];
+            // Continue with the existing code (INSERT and UPDATE operations)
+            mchQueryMod(
+              `SELECT COUNT(*) FROM magodmis.shiftlogbook WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
+              (err, countResult) => {
+                if (err) {
+                  logger.error(err);
+                  res.status(500).send("Internal Server Error");
+                } else {
+                  const count = countResult[0]["COUNT(*)"];
 
-                                  mchQueryMod(
-                                      `INSERT INTO magodmis.shiftlogbook (ShiftID, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl) VALUES ('${
-                                      req.body.selectshifttable.ShiftID
-                                      }', '${req.body.selectshifttable.Machine}', '${
-                                      req.body.requiredProgram[0].MProcess
-                                      }', '${req.body.requiredProgram[0].TaskNo}', '${
-                                      req.body.requiredProgram[0].NCProgarmNo
-                                      }', '${req.body.selectshifttable.Operator}', '${
-                                      req.body.requiredProgram[0].StopID
-                                      }', now(), now(), ${count + 1})`,
-                                      (insertErr, data) => {
-                                          if (insertErr) {
-                                              logger.error(insertErr);
-                                              res.status(500).send("Internal Server Error");
-                                          } else {
-                                              // Now, perform the update operation
-                                              mchQueryMod(
-                                                  `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}', ShiftStartTime='${req.body.selectshifttable.FromTime}', ShiftFinishTime='${req.body.selectshifttable.ToTime}',ShiftID='${req.body.selectshifttable.ShiftID}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
-                                                  (updateErr, updateData) => {
-                                                      if (updateErr) {
-                                                          logger.error(updateErr);
-                                                          res.status(500).send("Internal Server Error");
-                                                      } else {
-                                                          // Insert data into magodmis.shiftstoppagelist
-                                                          mchQueryMod(
-                                                              `INSERT INTO magodmis.shiftstoppagelist (ShiftID,Operator,Srl, StoppageID, StoppageReason, StoppageHead, Machine, FromTime, ToTime, Remarks, Locked,ShiftLogId) VALUES('${req.body.selectshifttable.ShiftID}', '${req.body.selectshifttable.Operator}', '0', '${lastRow.StoppageID}', '${req.body.requiredProgram[0].NCProgarmNo}','${lastRow.StoppageID}', '${req.body.selectshifttable.Machine}', NOW(), NOW(), '', '0', '${req.body.selectshifttable.ShiftID}')`,
-                                                              (stoppageInsertErr, stoppageData) => {
-                                                                  if (stoppageInsertErr) {
-                                                                      logger.error(stoppageInsertErr);
-                                                                      res.status(500).send("Internal Server Error");
-                                                                  } else {
-                                                                      res.send({ insertData: data, updateData });
-                                                                  }
-                                                              }
-                                                          );
-                                                      }
-                                                  }
-                                              );
-                                          }
-                                      }
-                                  );
-                              }
+                  mchQueryMod(
+                    `INSERT INTO magodmis.shiftlogbook (ShiftID, Machine, MProcess, TaskNo, Program, Operator, StoppageID, FromTime, ToTime, Srl) VALUES ('${
+                      req.body.selectshifttable.ShiftID
+                    }', '${req.body.selectshifttable.Machine}', '${
+                      req.body.requiredProgram[0].MProcess
+                    }', '${req.body.requiredProgram[0].TaskNo}', '${
+                      req.body.requiredProgram[0].NCProgarmNo
+                    }', '${req.body.selectshifttable.Operator}', '${
+                      req.body.requiredProgram[0].StopID
+                    }', now(), now(), ${count + 1})`,
+                    (insertErr, data) => {
+                      if (insertErr) {
+                        logger.error(insertErr);
+                        res.status(500).send("Internal Server Error");
+                      } else {
+                        // Now, perform the update operation
+                        mchQueryMod(
+                          `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}', ShiftStartTime='${req.body.selectshifttable.FromTime}', ShiftFinishTime='${req.body.selectshifttable.ToTime}',ShiftID='${req.body.selectshifttable.ShiftID}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
+                          (updateErr, updateData) => {
+                            if (updateErr) {
+                              logger.error(updateErr);
+                              res.status(500).send("Internal Server Error");
+                            } else {
+                              // Insert data into magodmis.shiftstoppagelist
+                              mchQueryMod(
+                                `INSERT INTO magodmis.shiftstoppagelist (ShiftID,Operator,Srl, StoppageID, StoppageReason, StoppageHead, Machine, FromTime, ToTime, Remarks, Locked,ShiftLogId) VALUES('${req.body.selectshifttable.ShiftID}', '${req.body.selectshifttable.Operator}', '0', '${lastRow.StoppageID}', '${req.body.requiredProgram[0].NCProgarmNo}','${lastRow.StoppageID}', '${req.body.selectshifttable.Machine}', NOW(), NOW(), '', '0', '${req.body.selectshifttable.ShiftID}')`,
+                                (stoppageInsertErr, stoppageData) => {
+                                  if (stoppageInsertErr) {
+                                    logger.error(stoppageInsertErr);
+                                    res
+                                      .status(500)
+                                      .send("Internal Server Error");
+                                  } else {
+                                    res.send({ insertData: data, updateData });
+                                  }
+                                }
+                              );
+                            }
                           }
-                      );
-                  }
-              );
+                        );
+                      }
+                    }
+                  );
+                }
+              }
+            );
           }
-      );
+        );
+      }
+    );
   } catch (error) {
-      next(error);
+    next(error);
   }
 });
-
 
 // Save ShiftLog
 ShiftOperator.post("/saveShiftLog", jsonParser, async (req, res, next) => {
@@ -1588,19 +1649,31 @@ ShiftOperator.post(
 );
 
 ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
-  // console.log("Reason",req.body.RejectedReason)
-  // console.log("row is",req.body.selectdefaultRow)
+  // console.log("updateOperator", req.body);
+
   try {
+    // Update machine_data.machinestatus
     mchQueryMod(
-      `Update machine_data.machinestatus set Operator='${req.body.Operator}' where MachineName='${req.body.selectshifttable.Machine}'
-    `,
+      `UPDATE machine_data.machinestatus SET Operator='${req.body.Operator}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
       (err, data) => {
         if (err) {
           logger.error(err);
           // res.status(500).send('Internal Server Error');
           console.log(error);
         } else {
-          res.send(data);
+          // Update magodmis.shiftlogbook
+          mchQueryMod(
+            `UPDATE magodmis.shiftlogbook SET Operator='${req.body.Operator}' WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
+            (err, data) => {
+              if (err) {
+                logger.error(err);
+                // Handle error for second query
+                console.log(error);
+              } else {
+                res.send(data);
+              }
+            }
+          );
         }
       }
     );
@@ -1608,6 +1681,7 @@ ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
     next(error);
   }
 });
+
 
 //openShiftLog Modal
 ShiftOperator.post("/getRowCounts", jsonParser, async (req, res, next) => {
@@ -1627,10 +1701,27 @@ ShiftOperator.post("/getRowCounts", jsonParser, async (req, res, next) => {
         } else {
           // Check if the count is 0
           const countIsZero = data[0].rowCount === 0;
+          // console.log("countIsZero is ",countIsZero);
 
-          // Send true if count is 0, false otherwise
-          res.send(countIsZero);
-          // console.log(countIsZero)
+          if (countIsZero) {
+            // If count is zero, execute additional query
+            mchQueryMod(
+              `
+              SELECT * FROM machine_data.machinestatus WHERE MachineName='${req.body.selectshifttable.Machine}';
+              `,
+              (err, machineData) => {
+                if (err) {
+                  logger.error(err);
+                  res.status(500).send("Internal Server Error");
+                } else {
+                  res.send(machineData);
+                }
+              }
+            );
+          } else {
+            // If count is not zero, send false
+            res.send([]);
+          }
         }
       }
     );
@@ -1912,6 +2003,7 @@ ShiftOperator.post("/checkhasBOM", jsonParser, async (req, res, next) => {
 
 //getNC_pgroam_part_Id
 ShiftOperator.post("/getNcProgramId", jsonParser, async (req, res, next) => {
+  // console.log("ncid getting from request",req.body);
   try {
     misQueryMod(
       `SELECT * FROM magodmis.ncprogram_partslist WHERE NCId='${req.body.NcId}'`,
@@ -1932,26 +2024,32 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
+      // console.log("obj is",obj);
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
                             SET m.QtyUsed=m.QtyUsed+${obj.useNow}, s.QtyUsed=s.QtyUsed+${obj.useNow}
-                            WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
+                            WHERE m.Id=s.PartReceipt_DetailsID AND s.RV_Id=${obj.RV_Id};`;
 
       const updateQuery2 = `UPDATE magodmis.ncprogram_partslist n
                             SET n.QtyCut=n.QtyCut+${obj.issuesets}
                             WHERE n.NC_Pgme_Part_ID=${obj.NC_Pgme_Part_ID};`;
+                            
+                            // console.log("obj.NcId:", obj.NcId);
+                            // console.log("obj.NcId: tpe is",typeof(obj.NcId));
 
       const updateQuery3 = `UPDATE magodmis.ncprograms n
                             SET n.QtyCut=n.QtyCut+${obj.issuesets}
-                            WHERE n.Ncid=${obj.NcId};`;
+                            WHERE n.Ncid='${obj.NcId}'`;
 
       // Execute the first query
       await executeUpdateQuery(updateQuery1);
 
       // Execute the second query
       await executeUpdateQuery(updateQuery2);
+      // console.log("updateQuery2 is",updateQuery2);
 
       // Execute the third query
       await executeUpdateQuery(updateQuery3);
+      // console.log("updateQuery3:", updateQuery3); // Add this line for debugging
     });
 
     // Once all promises are resolved, execute the fourth query
@@ -2004,7 +2102,7 @@ ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
-                            SET m.QtyReturned=m.QtyReturned+${obj.useNow}, s.QtyReturned=s.QtyReturned+${obj.useNow}
+                            SET m.QtyReturned=m.QtyReturned+${obj.useNow}
                             WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
 
       // Execute the first query
@@ -2246,6 +2344,7 @@ ShiftOperator.post(
 
 //getNCID for validation
 ShiftOperator.post("/getNCId", jsonParser, async (req, res, next) => {
+  // console.log("req.body",req.body);
   try {
     // First query to get NCProgramNo
     misQueryMod(
@@ -2372,33 +2471,26 @@ ShiftOperator.post(
   }
 );
 
-
-
 //update Machine Time
-ShiftOperator.post(
-  "/updateMachineTime",
-  jsonParser,
-  async (req, res, next) => {
-    const machineName = req.body.Machine;
+ShiftOperator.post("/updateMachineTime", jsonParser, async (req, res, next) => {
+  const machineName = req.body.Machine;
 
-    // console.log("req.body",req.body.Machine);
-    try {
-      misQueryMod(
-        `UPDATE magodmis.ncprograms n,(SELECT n.Ncid, Sum(TIMESTAMPDIFF(MINUTE,s.FromTime,s.ToTime)) as MachineTime 
+  // console.log("req.body",req.body.Machine);
+  try {
+    misQueryMod(
+      `UPDATE magodmis.ncprograms n,(SELECT n.Ncid, Sum(TIMESTAMPDIFF(MINUTE,s.FromTime,s.ToTime)) as MachineTime 
         FROM magodmis.ncprograms n,magodmis.shiftlogbook s WHERE n.Machine='${machineName}' 
         AND n.PStatus='Cutting' AND s.StoppageID=n.Ncid GROUP BY n.Ncid) as A 
         SET n.ActualTime=A.MachineTime WHERE A.ncid=n.Ncid`,
-        (err, data) => {
-          if (err) logger.error(err);
-          res.send(data);
-        }
-      );
-    } catch (error) {
-      next(error);
-    }
+      (err, data) => {
+        if (err) logger.error(err);
+        res.send(data);
+      }
+    );
+  } catch (error) {
+    next(error);
   }
-);
-
+});
 
 //update form after mark as used
 ShiftOperator.post(
@@ -2423,28 +2515,60 @@ ShiftOperator.post(
   }
 );
 
-
 //update Opeartor
 ShiftOperator.post(
   "/updateOpertaorafterChange",
   jsonParser,
   async (req, res, next) => {
-      // console.log("req.body", req.body.selectshifttable);
-      try {
-          misQueryMod(
-              `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
-              (err, data) => {
-                  if (err) {
-                      logger.error(err);
-                      return res.status(500).send("Error updating operator");
-                  }
-                  res.send(data);
-              }
-          );
-      } catch (error) {
-          next(error);
-      }
+    // console.log("req.body", req.body.selectshifttable);
+    try {
+      misQueryMod(
+        `UPDATE machine_data.machinestatus SET Operator='${req.body.selectshifttable.Operator}' WHERE MachineName='${req.body.selectshifttable.Machine}'`,
+        (err, data) => {
+          if (err) {
+            logger.error(err);
+            return res.status(500).send("Error updating operator");
+          }
+          res.send(data);
+        }
+      );
+    } catch (error) {
+      next(error);
+    }
   }
 );
+
+
+//check QtyCut for Mark as completed
+ShiftOperator.post(
+  "/getQtydata",
+  jsonParser,
+  async (req, res, next) => {
+    console.log('getqty', req.body);
+    try {
+      const sqlQuery = `SELECT * FROM magodmis.ncprogram_partslist n WHERE n.NCId='${req.body.NCId}'`;
+      console.log("SQL Query:", sqlQuery); // Log the SQL query
+
+      mchQueryMod(
+        sqlQuery,
+        (err, data) => {
+          if (err) {
+            logger.error(err);
+            return res.status(500).send('Internal Server Error');
+          } else {
+            console.log("Query executed successfully.");
+            console.log("Returned data is", data);
+            res.send(data);
+          }
+        }
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+
+
 
 module.exports = ShiftOperator;

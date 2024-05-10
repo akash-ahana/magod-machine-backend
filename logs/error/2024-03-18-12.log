@@ -1,0 +1,4 @@
+2024-03-18T07:18:36.292Z [test] error: Status Code : undefined  - Error : Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials r9-20020a62e409000000b006e48d5eb886sm7190072pfh.115 - gsmtp
+2024-03-18T07:20:55.568Z [test] error: Status Code : undefined  - Error : Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials mm7-20020a1709030a0700b001dddd375058sm8464860plb.234 - gsmtp
