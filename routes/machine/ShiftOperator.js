@@ -37,9 +37,10 @@ ShiftOperator.get("/getallMachines", async (req, res, next) => {
 ShiftOperator.post("/getShiftDetails", jsonParser, async (req, res, next) => {
   // console.log("getShiftDetails",req.body);
   try {
+    const { refName, ShiftDate, Shift } = req.body;
     misQueryMod(
       `Select *   
-        from magodmis.shiftregister where Machine='${req.body.refName}' and ShiftDate='${req.body.ShiftDate}' and Shift='${req.body.Shift}'`,
+        from magodmis.shiftregister where Machine='${req.body.refName}' and ShiftDate='${req.body.ShiftDate}' and (Shift='${Shift}' OR Shift='General' OR Shift='Special')`,
       (err, data) => {
         if (err) logger.error(err);
         // console.log(data)
@@ -573,7 +574,6 @@ ShiftOperator.post(
   "/MachineTasksService",
   jsonParser,
   async (req, res, next) => {
-    // console.log(req.body,"service",req.body.NCId)
     // Step 1: Execute the first query
     const firstQuery = `
     SELECT *
@@ -583,14 +583,10 @@ ShiftOperator.post(
 
     try {
       mchQueryMod(firstQuery, async (err, firstQueryResult) => {
-        // console.log("Entering callback for the first query");
-
         if (err) {
           console.error("Error in first query:", err);
           res.status(500).send("Internal Server Error");
         } else {
-          // console.log("first query result", firstQueryResult);
-
           if (
             firstQueryResult &&
             firstQueryResult.length > 0 &&
@@ -598,73 +594,31 @@ ShiftOperator.post(
           ) {
             // Extract IssueID from the first query result
             const issueId = firstQueryResult[0].IssueID;
-            // console.log("IssueID:", issueId);
 
-            // Step 2: Execute the second query using the extracted IssueID
-            const secondQuery = `
-            SELECT *
+            // Step 2: Execute the third query using the extracted IssueID directly
+            const thirdQuery = `
+            SELECT s.*, m.Customer, m.RV_No, m.RV_Date, m1.PartId, m1.CustBOM_Id
             FROM magodmis.shopfloor_bom_issuedetails s
+            JOIN magodmis.material_receipt_register m ON m.RvID = s.RV_Id
+            JOIN magodmis.mtrl_part_receipt_details m1 ON m1.Id = s.PartReceipt_DetailsID
             WHERE s.IV_ID = '${issueId}';
           `;
 
             try {
-              mchQueryMod(secondQuery, async (err, secondQueryResult) => {
-                // console.log("Entering callback for the second query");
-
+              mchQueryMod(thirdQuery, async (err, thirdQueryResult) => {
                 if (err) {
-                  console.error("Error in second query:", err);
+                  console.error("Error in third query:", err);
                   res.status(500).send("Internal Server Error");
                 } else {
-                  // console.log("second query result", secondQueryResult);
-
-                  if (
-                    secondQueryResult &&
-                    secondQueryResult[0] &&
-                    secondQueryResult[0].IV_ID
-                  ) {
-                    // Extract IV_ID from the second query result
-                    const ivId = secondQueryResult[0].IV_ID;
-
-                    // Step 3: Execute the third query using the extracted IV_ID
-                    const thirdQuery = `
-                    SELECT s.*, m.Customer, m.RV_No, m.RV_Date, m1.PartId, m1.CustBOM_Id
-                    FROM magodmis.shopfloor_bom_issuedetails s, magodmis.material_receipt_register m, magodmis.mtrl_part_receipt_details m1
-                    WHERE s.IV_ID = '${ivId}' AND m.RvID = s.RV_Id AND m1.Id = s.PartReceipt_DetailsID;
-                  `;
-
-                    try {
-                      mchQueryMod(thirdQuery, async (err, thirdQueryResult) => {
-                        // console.log("Entering callback for the third query");
-
-                        if (err) {
-                          console.error("Error in third query:", err);
-                          res.status(500).send("Internal Server Error");
-                        } else {
-                          // console.log("third query result", thirdQueryResult);
-                          // Send the third query result as the response
-                          res.send(thirdQueryResult);
-                        }
-                      });
-                    } catch (error) {
-                      console.error("Error in third query:", error);
-                      next(error);
-                    }
-                  } else {
-                    // Handle the case where IV_ID is not found in the second query result
-                    // console.log("IV_ID not found in the second query result");
-                    res
-                      .status(404)
-                      .send("IV_ID not found in the second query result");
-                  }
+                  res.send(thirdQueryResult);
                 }
               });
             } catch (error) {
-              console.error("Error in second query:", error);
+              console.error("Error in third query:", error);
               next(error);
             }
           } else {
             // Handle the case where IssueID is not found in the first query result
-            // console.log("IssueID not found in the first query result");
             res.status(404).send("IssueID not found in the first query result");
           }
         }
@@ -675,6 +629,7 @@ ShiftOperator.post(
     }
   }
 );
+
 
 //MARK AS USED PROGRAM MATERIAL
 ShiftOperator.post(
@@ -1649,8 +1604,6 @@ ShiftOperator.post(
 );
 
 ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
-  // console.log("updateOperator", req.body);
-
   try {
     // Update machine_data.machinestatus
     mchQueryMod(
@@ -1658,8 +1611,7 @@ ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
       (err, data) => {
         if (err) {
           logger.error(err);
-          // res.status(500).send('Internal Server Error');
-          console.log(error);
+          return res.status(500).send('Internal Server Error');
         } else {
           // Update magodmis.shiftlogbook
           mchQueryMod(
@@ -1667,10 +1619,20 @@ ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
             (err, data) => {
               if (err) {
                 logger.error(err);
-                // Handle error for second query
-                console.log(error);
+                return res.status(500).send('Internal Server Error');
               } else {
-                res.send(data);
+                // Update magodmis.shiftregister
+                mchQueryMod(
+                  `UPDATE magodmis.shiftregister SET Operator='${req.body.Operator}' WHERE ShiftID='${req.body.selectshifttable.ShiftID}'`,
+                  (err, data) => {
+                    if (err) {
+                      logger.error(err);
+                      return res.status(500).send('Internal Server Error');
+                    } else {
+                      res.send(data);
+                    }
+                  }
+                );
               }
             }
           );
@@ -1681,6 +1643,7 @@ ShiftOperator.post("/updateOperator", jsonParser, async (req, res, next) => {
     next(error);
   }
 });
+
 
 
 //openShiftLog Modal
@@ -1870,6 +1833,8 @@ function calculateRunningTime(toTime, fromTime) {
   // For example: return the difference between toTime and fromTime
 }
 
+
+
 //Middle table(Program Material) DataRefresh Data
 ShiftOperator.post(
   "/ProgramMaterialAfterRefresh",
@@ -2024,7 +1989,6 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
-      // console.log("obj is",obj);
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
                             SET m.QtyUsed=m.QtyUsed+${obj.useNow}, s.QtyUsed=s.QtyUsed+${obj.useNow}
                             WHERE m.Id=s.PartReceipt_DetailsID AND s.RV_Id=${obj.RV_Id};`;
@@ -2032,50 +1996,42 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
       const updateQuery2 = `UPDATE magodmis.ncprogram_partslist n
                             SET n.QtyCut=n.QtyCut+${obj.issuesets}
                             WHERE n.NC_Pgme_Part_ID=${obj.NC_Pgme_Part_ID};`;
-                            
-                            // console.log("obj.NcId:", obj.NcId);
-                            // console.log("obj.NcId: tpe is",typeof(obj.NcId));
 
       const updateQuery3 = `UPDATE magodmis.ncprograms n
                             SET n.QtyCut=n.QtyCut+${obj.issuesets}
-                            WHERE n.Ncid='${obj.NcId}'`;
+                            WHERE n.Ncid='${obj.NcId}';`;
 
       // Execute the first query
       await executeUpdateQuery(updateQuery1);
 
       // Execute the second query
       await executeUpdateQuery(updateQuery2);
-      // console.log("updateQuery2 is",updateQuery2);
 
       // Execute the third query
       await executeUpdateQuery(updateQuery3);
-      // console.log("updateQuery3:", updateQuery3); // Add this line for debugging
+
+      // Fourth query
+      const issuesetsNumber = Number(obj.issuesets);
+      let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s
+                          SET s.QtyUsed=s.QtyUsed+${issuesetsNumber}
+                          WHERE s.IssueID=${obj.IV_ID};`;
+
+      // Add the additional query if QtyIssued is equal to QtyUsed
+      if (obj.QtyIssued === obj.QtyUsed) {
+        updateQuery4 += `, s.Status='Closed'`;
+      }
+
+      // console.log("Executing updateQuery4:", updateQuery4); // Log query before execution
+      await executeUpdateQuery(updateQuery4);
+      // console.log("Executed updateQuery4 for IV_ID:", obj.IV_ID); // Log after execution
     });
 
-    // Once all promises are resolved, execute the fourth query
-    Promise.all(updatePromises)
-      .then(async () => {
-        // Construct updateQuery4 based on conditions in the loop
-        let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s
-                            SET s.QtyUsed=s.QtyUsed+${sendobject[0].issuesets}`; // Using issuesets from the first object
+    // Execute all promises
+    await Promise.all(updatePromises);
 
-        // Add the additional query if QtyIssued is equal to QtyUsed
-        if (sendobject[0].QtyIssued === sendobject[0].QtyUsed) {
-          updateQuery4 += `, s.Status='Closed'`;
-        }
-
-        updateQuery4 += ` WHERE s.IssueID=${sendobject[0].IV_ID};`;
-
-        // Execute the fourth query
-        await executeUpdateQuery(updateQuery4);
-
-        res.send(true);
-      })
-      .catch((error) => {
-        console.error("Error in executing update queries:", error);
-        return res.status(500).send({ error: "Internal Server Error" });
-      });
+    res.send(true);
   } catch (error) {
+    console.error("Error in /ServicemarkasUsed route:", error);
     next(error);
   }
 });
@@ -2093,47 +2049,55 @@ function executeUpdateQuery(query) {
     });
   });
 }
+
+
 
 //mark as Rejected Production Report
 ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
   try {
     const { sendobject } = req.body;
+    // console.log("req.body of returned:", JSON.stringify(req.body, null, 2));
+
+    // Disable safe updates for the current session
+    await executeUpdateQuery("SET SQL_SAFE_UPDATES = 0");
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
+      // First update query
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
-                            SET m.QtyReturned=m.QtyReturned+${obj.useNow}
+                            SET s.QtyReturned=s.QtyReturned+${obj.useNow}
                             WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
 
-      // Execute the first query
+      // console.log("Executing updateQuery1:", updateQuery1); // Log query before execution
       await executeUpdateQuery(updateQuery1);
+      // console.log("Executed updateQuery1 for Id:", obj.Id); // Log after execution
+
+      // Second update query
+      const issuesetsNumber = Number(obj.issuesets);
+      // console.log("issuesetsNumber is", typeof(issuesetsNumber), issuesetsNumber);
+
+      let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s SET s.QtyReturned=s.QtyReturned+${issuesetsNumber} WHERE s.IssueID=${obj.IV_ID};`;
+      
+      // console.log("Executing updateQuery4:", updateQuery4); // Log query before execution
+      await executeUpdateQuery(updateQuery4);
+      // console.log("Executed updateQuery4 for IV_ID:", obj.IV_ID); // Log after execution
+
+      // Check if the additional query is needed
+      if (obj.QtyIssued === obj.QtyUsed + obj.QtyReturned) {
+        let closeQuery = `UPDATE magodmis.shopfloor_part_issueregister s SET s.Status='Closed' WHERE s.IssueID=${obj.IV_ID};`;
+        await executeUpdateQuery(closeQuery);
+      }
     });
 
-    // Construct updateQuery4 outside the loop
-    let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s SET s.QtyReturned=s.QtyUsed+${sendobject[0].issuesets}`; // Using issuesets from the first object
+    // Execute all promises
+    await Promise.all(updatePromises);
 
-    // Add the additional query if QtyIssued is equal to QtyUsed
-    if (
-      sendobject.every((obj) => obj.QtyIssued === obj.QtyUsed + obj.QtyReturned)
-    ) {
-      updateQuery4 += `, s.Status='Closed'`;
-    }
+    // Re-enable safe updates for the current session
+    await executeUpdateQuery("SET SQL_SAFE_UPDATES = 1");
 
-    updateQuery4 += ` WHERE s.IssueID=${sendobject[0].IV_ID};`;
-
-    // Execute the fourth query after all promises are resolved
-    Promise.all(updatePromises)
-      .then(async () => {
-        // Execute the fourth query
-        await executeUpdateQuery(updateQuery4);
-
-        res.send(true);
-      })
-      .catch((error) => {
-        console.error("Error in executing update queries:", error);
-        return res.status(500).send({ error: "Internal Server Error" });
-      });
+    res.send(true);
   } catch (error) {
+    console.error("Error in /markasReturned route:", error);
     next(error);
   }
 });
@@ -2143,14 +2107,17 @@ function executeUpdateQuery(query) {
   return new Promise((resolve, reject) => {
     misQueryMod(query, (err, result) => {
       if (err) {
-        logger.error(err);
+        console.error("Query execution error:", err); // Enhanced error logging
         reject(err);
       } else {
+        // console.log("Query executed successfully:", result); // Log successful execution
         resolve(result);
       }
     });
   });
 }
+
+
 
 //middletable data after yes/no
 ShiftOperator.post(
@@ -2478,10 +2445,20 @@ ShiftOperator.post("/updateMachineTime", jsonParser, async (req, res, next) => {
   // console.log("req.body",req.body.Machine);
   try {
     misQueryMod(
-      `UPDATE magodmis.ncprograms n,(SELECT n.Ncid, Sum(TIMESTAMPDIFF(MINUTE,s.FromTime,s.ToTime)) as MachineTime 
-        FROM magodmis.ncprograms n,magodmis.shiftlogbook s WHERE n.Machine='${machineName}' 
-        AND n.PStatus='Cutting' AND s.StoppageID=n.Ncid GROUP BY n.Ncid) as A 
-        SET n.ActualTime=A.MachineTime WHERE A.ncid=n.Ncid`,
+      `UPDATE magodmis.ncprograms n
+      JOIN (
+          SELECT n.Ncid, n.NcTaskId, SUM(TIMESTAMPDIFF(MINUTE, s.FromTime, s.ToTime)) AS MachineTime
+          FROM magodmis.ncprograms n
+          JOIN magodmis.shiftlogbook s ON s.StoppageID = n.Ncid
+          WHERE n.Machine = '${machineName}' 
+            AND n.PStatus = 'Cutting'
+          GROUP BY n.Ncid, n.NcTaskId
+      ) AS A ON n.Ncid = A.Ncid
+      JOIN magodmis.nc_task_list t ON t.NcTaskId = n.NcTaskId
+      SET n.ActualTime = A.MachineTime, 
+          t.TaskProcessTime = A.MachineTime
+      WHERE n.Machine = '${machineName}' 
+        AND n.PStatus = 'Cutting';`,
       (err, data) => {
         if (err) logger.error(err);
         res.send(data);
@@ -2544,10 +2521,10 @@ ShiftOperator.post(
   "/getQtydata",
   jsonParser,
   async (req, res, next) => {
-    console.log('getqty', req.body);
+    // console.log('getqty', req.body);
     try {
       const sqlQuery = `SELECT * FROM magodmis.ncprogram_partslist n WHERE n.NCId='${req.body.NCId}'`;
-      console.log("SQL Query:", sqlQuery); // Log the SQL query
+      // console.log("SQL Query:", sqlQuery); // Log the SQL query
 
       mchQueryMod(
         sqlQuery,
@@ -2556,8 +2533,8 @@ ShiftOperator.post(
             logger.error(err);
             return res.status(500).send('Internal Server Error');
           } else {
-            console.log("Query executed successfully.");
-            console.log("Returned data is", data);
+            // console.log("Query executed successfully.");
+            // console.log("Returned data is", data);
             res.send(data);
           }
         }
