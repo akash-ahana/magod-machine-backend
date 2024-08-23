@@ -76,7 +76,7 @@ ShiftOperator.get("/getShiftIncharge", async (req, res, next) => {
   try {
     const shiftInchargeNames = [];
     productionQueryMod(
-      `SELECT * FROM magod_production.operator_list`,
+      `SELECT * FROM magod_production.operator_list where Active='1'`,
       (err, data) => {
         if (err) logger.error(err);
         for (let i = 0; i < data.length; i++) {
@@ -638,7 +638,11 @@ ShiftOperator.post(
   async (req, res, next) => {
     // console.log("req.body required is", req.body);
     try {
-      const { selectedMtrlTable, selectedMachine } = req.body;
+      const { selectedMtrlTable, selectedMachine, formdata } = req.body;
+
+      // Determine if the operation contains "Tube Cutting"
+      const isTubeCutting = formdata.Operation.toLowerCase().includes('tube cutting'.toLowerCase());
+      // console.log("isTubeCutting is",isTubeCutting);
 
       // Iterate over each row in selectedMtrlTable
       for (const row of selectedMtrlTable) {
@@ -679,12 +683,21 @@ ShiftOperator.post(
         // Execute the third query for each row
         await executeQuery(updateQuery3);
 
-        // Fourth Query (New Query)
-        const updateQuery4 = `
-          UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
-          SET n.QtyCut = n1.qtycut * n.QtyNested
-          WHERE n.Ncid = n1.Ncid AND n1.NCId = ${row.NcID};
-        `;
+        // Fourth Query (New Query) - Conditional based on 'Operation'
+        let updateQuery4;
+        if (isTubeCutting) {
+          updateQuery4 = `
+            UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
+            SET n.QtyCut = n1.qtycut 
+            WHERE n.Ncid = n1.Ncid AND n1.NCId = ${row.NcID};
+          `;
+        } else {
+          updateQuery4 = `
+            UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
+            SET n.QtyCut = n1.qtycut * n.QtyNested
+            WHERE n.Ncid = n1.Ncid AND n1.NCId = ${row.NcID};
+          `;
+        }
 
         // Execute the fourth query for each row
         await executeQuery(updateQuery4);
@@ -697,6 +710,7 @@ ShiftOperator.post(
     }
   }
 );
+
 
 //MARK AS REJECTED PROGRAM MATERIAL
 ShiftOperator.post(
@@ -736,7 +750,6 @@ ShiftOperator.post(
 
 //LoadMaterial Profile
 ShiftOperator.post("/loadMaterial", jsonParser, async (req, res, next) => {
-  // console.log("loadMaterial", req.body.selectedMtrlTable[0].ShapeMtrlID);
   try {
     // Update machine_data.machinestatus
     mchQueryMod1(`
@@ -768,6 +781,7 @@ ShiftOperator.post("/loadMaterial", jsonParser, async (req, res, next) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
 
 //load program
 ShiftOperator.post("/loadProgram", jsonParser, async (req, res, next) => {
@@ -863,17 +877,19 @@ ShiftOperator.post(
   "/markAsUsedProductionReport",
   jsonParser,
   async (req, res, next) => {
-    // console.log("req.body", req.body);
     try {
       // Start a database transaction
       await executeQuery("START TRANSACTION");
-      const { selectdefaultRow, selectedMachine } = req.body;
+      const { selectdefaultRow, selectedMachine, selectProductionReport } = req.body;
+
+      // Check if 'Operation' contains 'Tube Cutting'
+      const isTubeCutting = selectProductionReport.Operation.toLowerCase().includes('tube cutting'.toLowerCase());
+
+      // console.log("isTubeCutting is",isTubeCutting);
 
       if (Array.isArray(selectdefaultRow)) {
         for (const selectedRow of selectdefaultRow) {
           const { NcPgmMtrlId, NcID } = selectedRow;
-
-          // Your existing queries go here...
 
           // First Query
           const updateQuery1 = `
@@ -893,12 +909,21 @@ ShiftOperator.post(
           // Execute the second query
           await executeQuery(updateQuery2);
 
-          // Additional Query
-          const updateQueryAdditional = `
-            UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
-            SET n.QtyCut = n1.qtycut * n.QtyNested
-            WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
-          `;
+          // Additional Query based on 'Operation'
+          let updateQueryAdditional;
+          if (isTubeCutting) {
+            updateQueryAdditional = `
+              UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
+              SET n.QtyCut = n1.qtycut
+              WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
+            `;
+          } else {
+            updateQueryAdditional = `
+              UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
+              SET n.QtyCut = n1.qtycut * n.QtyNested
+              WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
+            `;
+          }
           // Execute the additional query
           await executeQuery(updateQueryAdditional);
         }
@@ -916,6 +941,8 @@ ShiftOperator.post(
     }
   }
 );
+
+
 
 // ////Reject Production Report
 ShiftOperator.post(
