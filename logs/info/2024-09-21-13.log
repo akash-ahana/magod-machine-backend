@@ -1,0 +1,12 @@
+2024-09-21T07:42:36.716Z [test] info: listening on port 5016
+2024-09-21T07:45:10.976Z [test] info: Login Success - adminuser
+2024-09-21T07:47:23.430Z [test] error: Incorrect datetime value: '2024-09-21T00:30:00.000Z' for column 'ToTime' at row 1
+2024-09-21T07:47:33.151Z [test] info: listening on port 5016
+2024-09-21T07:48:47.460Z [test] info: listening on port 5016
+2024-09-21T07:49:03.497Z [test] info: listening on port 5016
+2024-09-21T07:49:05.412Z [test] info: listening on port 5016
+2024-09-21T07:49:08.705Z [test] info: listening on port 5016
+2024-09-21T07:49:39.518Z [test] info: listening on port 5016
+2024-09-21T07:52:05.828Z [test] info: listening on port 5016
+2024-09-21T07:53:46.185Z [test] error: Incorrect datetime value: '2024-09-21T00:30:00.000Z' for column 'ToTime' at row 1
+2024-09-21T07:54:14.700Z [test] error: Incorrect datetime value: '2024-09-21T00:30:00.000Z' for column 'ToTime' at row 1
