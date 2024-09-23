@@ -1,0 +1,10 @@
+2024-09-18T12:26:01.211Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:26:23.404Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:26:46.815Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:27:17.965Z [test] error: Incorrect datetime value: '2024-09-18T08:30:00.000Z' for column 'ToTime' at row 1
+2024-09-18T12:27:28.050Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:28:00.430Z [test] error: Incorrect datetime value: '2024-09-18T08:30:00.000Z' for column 'ToTime' at row 1
+2024-09-18T12:28:10.980Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:28:54.941Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')
+2024-09-18T12:29:31.305Z [test] error: Incorrect datetime value: '2024-09-18T08:30:00.000Z' for column 'ToTime' at row 1
+2024-09-18T12:29:36.075Z [test] error: Status Code : undefined  - Error : Cannot read properties of undefined (reading 'Ncid')

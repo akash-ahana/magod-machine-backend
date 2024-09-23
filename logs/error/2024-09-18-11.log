@@ -1,0 +1,5 @@
+2024-09-18T05:48:41.595Z [test] error: Cannot read properties of undefined (reading 'constructor')
+2024-09-18T05:49:27.322Z [test] error: Cannot read properties of undefined (reading 'constructor')
+2024-09-18T05:50:07.166Z [test] error: Cannot read properties of undefined (reading 'constructor')
+2024-09-18T06:06:56.896Z [test] error: Query was empty
+2024-09-18T06:08:56.171Z [test] error: Query was empty

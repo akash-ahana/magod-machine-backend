@@ -1,0 +1,2 @@
+2024-09-17T11:44:17.985Z [test] error: Deadlock found when trying to get lock; try restarting transaction
+2024-09-17T12:01:47.779Z [test] error: Incorrect datetime value: '2024-09-17T08:30:00.000Z' for column 'ToTime' at row 1
