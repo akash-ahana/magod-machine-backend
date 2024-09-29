@@ -293,7 +293,8 @@ ShiftOperator.post("/addStoppage", jsonParser, async (req, res, next) => {
         stopid = '${req.body.selectedStoppageID}',
         SheetStartTime = NOW(),
         ProgMachineTime = 0,
-        SheetMachineTime = 0
+        SheetMachineTime = 0,
+                Operation='Not Defined'
     WHERE MachineName = '${req.body.selectshifttable.Machine}'`;
 
   try {
@@ -345,7 +346,8 @@ ShiftOperator.post("/addStoppage", jsonParser, async (req, res, next) => {
           m.stopid='${req.body.selectedStoppageID}',
           m.SheetStartTime=NOW(),
           m.ProgMachineTime=0,
-          m.SheetMachineTime=0
+          m.SheetMachineTime=0,
+                  Operation='Not Defined'
       WHERE m.MachineName='${req.body.selectshifttable.Machine}';
     `);
 
@@ -2009,54 +2011,58 @@ ShiftOperator.post("/getNcProgramId", jsonParser, async (req, res, next) => {
   }
 });
 
+
 //Service Mark as Used
 ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
-  console.log("req.body is of service mark as used is",req.body);
   try {
     const { sendobject } = req.body;
+
+    // Initialize a variable to store the total issuesetsNumber for updateQuery4
+    let totalIssuesetsNumber = 0;
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
                             SET m.QtyUsed=m.QtyUsed+${obj.useNow}, s.QtyUsed=s.QtyUsed+${obj.useNow}
-                            WHERE m.Id=s.PartReceipt_DetailsID AND s.RV_Id=${obj.RV_Id};`;
-
-      const updateQuery2 = `UPDATE magodmis.ncprogram_partslist n
-                            SET n.QtyCut=n.QtyCut+${obj.issuesets}
-                            WHERE n.NC_Pgme_Part_ID=${obj.NC_Pgme_Part_ID};`;
-
-      const updateQuery3 = `UPDATE magodmis.ncprograms n
-                            SET n.QtyCut=n.QtyCut+${obj.issuesets}
-                            WHERE n.Ncid='${obj.NcId}';`;
+                            WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
 
       // Execute the first query
       await executeUpdateQuery(updateQuery1);
 
-      // Execute the second query
-      await executeUpdateQuery(updateQuery2);
-
-      // Execute the third query
-      await executeUpdateQuery(updateQuery3);
-
-      // Fourth query
-      const issuesetsNumber = Number(obj.issuesets);
-      let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s
-                          SET s.QtyUsed=s.QtyUsed+${issuesetsNumber}
-                          WHERE s.IssueID=${obj.IV_ID};`;
-
-      // Add the additional query if QtyIssued is equal to QtyUsed
-      if (obj.QtyIssued === obj.QtyUsed) {
-        updateQuery4 += `, s.Status='Closed'`;
-      }
-
-      // console.log("Executing updateQuery4:", updateQuery4); // Log query before execution
-      await executeUpdateQuery(updateQuery4);
-      // console.log("Executed updateQuery4 for IV_ID:", obj.IV_ID); // Log after execution
+      // Aggregate the total issuesetsNumber for later use in updateQuery4
+      totalIssuesetsNumber += Number(obj.issuesets);
     });
 
-    // Execute all promises
+    // Wait for all the queries in the loop to complete
     await Promise.all(updatePromises);
 
+    // Now execute updateQuery2 and updateQuery3 only once
+    const updateQuery2 = `UPDATE magodmis.ncprogram_partslist n
+                          SET n.QtyCut=n.QtyCut + ${sendobject[0].issuesets}
+                          WHERE n.NC_Pgme_Part_ID=${sendobject[0].NC_Pgme_Part_ID};`;
+
+    const updateQuery3 = `UPDATE magodmis.ncprograms n
+                          SET n.QtyCut=n.QtyCut + ${sendobject[0].issuesets}
+                          WHERE n.Ncid='${sendobject[0].NcId}';`;
+
+    // Execute the second and third queries
+    await executeUpdateQuery(updateQuery2);
+    await executeUpdateQuery(updateQuery3);
+
+    // Now execute updateQuery4 once using the aggregated issuesetsNumber
+    let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s
+                        SET s.QtyUsed=s.QtyUsed+${sendobject[0].issuesets}
+                        WHERE s.IssueID=${sendobject[0].IV_ID};`;
+
+    // Check if any of the objects have QtyIssued === QtyUsed and update the status
+    if (sendobject.some((obj) => obj.QtyIssued === obj.QtyUsed)) {
+      updateQuery4 += `, s.Status='Closed'`;
+    }
+
+    // Execute the fourth query
+    await executeUpdateQuery(updateQuery4);
+
+    // Send response back to the client
     res.send(true);
   } catch (error) {
     console.error("Error in /ServicemarkasUsed route:", error);
@@ -2078,14 +2084,19 @@ function executeUpdateQuery(query) {
   });
 }
 
+
+
 //mark as Rejected Production Report
 ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
   try {
     const { sendobject } = req.body;
-    // console.log("req.body of returned:", JSON.stringify(req.body, null, 2));
 
     // Disable safe updates for the current session
     await executeUpdateQuery("SET SQL_SAFE_UPDATES = 0");
+
+    // Initialize a variable to store the total issuesetsNumber for updateQuery4
+    let totalIssuesetsNumber = 0;
+    let issueID = null; // To store IV_ID, assuming it's the same for all objects
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
@@ -2094,29 +2105,34 @@ ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
                             SET s.QtyReturned=s.QtyReturned+${obj.useNow}
                             WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
 
-      // console.log("Executing updateQuery1:", updateQuery1); // Log query before execution
+      // Execute the first query
       await executeUpdateQuery(updateQuery1);
-      // console.log("Executed updateQuery1 for Id:", obj.Id); // Log after execution
 
-      // Second update query
-      const issuesetsNumber = Number(obj.issuesets);
-      // console.log("issuesetsNumber is", typeof(issuesetsNumber), issuesetsNumber);
+      // Aggregate issuesetsNumber and store IV_ID for later use
+      totalIssuesetsNumber += Number(obj.issuesets);
+      issueID = obj.IV_ID;
 
-      let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s SET s.QtyReturned=s.QtyReturned+${issuesetsNumber} WHERE s.IssueID=${obj.IV_ID};`;
-
-      // console.log("Executing updateQuery4:", updateQuery4); // Log query before execution
-      await executeUpdateQuery(updateQuery4);
-      // console.log("Executed updateQuery4 for IV_ID:", obj.IV_ID); // Log after execution
-
-      // Check if the additional query is needed
+      // Check if the additional query is needed (close status)
       if (obj.QtyIssued === obj.QtyUsed + obj.QtyReturned) {
-        let closeQuery = `UPDATE magodmis.shopfloor_part_issueregister s SET s.Status='Closed' WHERE s.IssueID=${obj.IV_ID};`;
+        let closeQuery = `UPDATE magodmis.shopfloor_part_issueregister s 
+                          SET s.Status='Closed' 
+                          WHERE s.IssueID=${obj.IV_ID};`;
         await executeUpdateQuery(closeQuery);
       }
     });
 
-    // Execute all promises
+    // Wait for all the queries in the loop to complete
     await Promise.all(updatePromises);
+
+    // Now execute updateQuery4 once using the aggregated issuesetsNumber
+    if (issueID !== null) {
+      let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s 
+                          SET s.QtyReturned=s.QtyReturned+${sendobject[0].issuesets} 
+                          WHERE s.IssueID=${sendobject[0].IV_ID};`;
+
+      // Execute the fourth query outside the loop
+      await executeUpdateQuery(updateQuery4);
+    }
 
     // Re-enable safe updates for the current session
     await executeUpdateQuery("SET SQL_SAFE_UPDATES = 1");
@@ -2136,7 +2152,6 @@ function executeUpdateQuery(query) {
         console.error("Query execution error:", err); // Enhanced error logging
         reject(err);
       } else {
-        // console.log("Query executed successfully:", result); // Log successful execution
         resolve(result);
       }
     });
