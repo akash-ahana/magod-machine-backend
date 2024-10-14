@@ -5,23 +5,25 @@ require('dotenv').config();
 const { logger } = require('./helpers/logger');
 var mysql = require('mysql2');
 
-
 const app = express();
-app.use(cors())
+app.use(cors());
 
+// Set a larger payload limit for JSON and URL-encoded requests
+app.use(bodyParser.json({ limit: '50mb' })); 
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); 
 app.get('/', (req, res) => {
     res.send("hello");
 });
 
-
 const ShiftOperator = require('./routes/machine/ShiftOperator');
 app.use("/ShiftOperator", ShiftOperator);
- 
 
 const printLabel = require('./routes/machine/PrintLabel');
 app.use("/printLabel", printLabel);
 
- 
+const userRouter = require('./routes/machine/user');
+app.use("/user", userRouter);
+
 app.use((err, req, res, next) => {
     res.status(err.status || 500);
     res.send({
@@ -29,10 +31,9 @@ app.use((err, req, res, next) => {
             status: err.status || 500,
             message: err.message,
         }
-    })
+    });
     logger.error(`Status Code : ${err.status}  - Error : ${err.message}`);
-})
-
+});
 
 // starting the server
 app.listen(process.env.PORT, () => {

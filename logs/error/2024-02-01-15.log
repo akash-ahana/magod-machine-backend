@@ -1,0 +1,3 @@
+2024-02-01T10:11:49.017Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:13:30.223Z [test] error: Unknown column 'Active' in 'where clause'
+2024-02-01T10:15:24.693Z [test] error: Unknown column 'Active' in 'where clause'

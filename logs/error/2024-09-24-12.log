@@ -1,0 +1,2 @@
+2024-09-24T06:36:42.483Z [test] error: Incorrect datetime value: '2024-09-24T00:30:00.000Z' for column 'ToTime' at row 1
+2024-09-24T07:05:38.729Z [test] error: Incorrect datetime value: '2024-09-24T00:30:00.000Z' for column 'ToTime' at row 1

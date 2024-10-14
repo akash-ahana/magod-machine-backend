@@ -1,0 +1,14 @@
+2024-09-18T04:44:11.667Z [test] info: listening on port 5016
+2024-09-18T04:45:09.459Z [test] info: Login Success - adminuser
+2024-09-18T05:07:29.815Z [test] error: Incorrect datetime value: '2024-09-18T00:30:00.000Z' for column 'ToTime' at row 1
+2024-09-18T05:15:45.951Z [test] info: listening on port 5016
+2024-09-18T05:16:30.463Z [test] info: listening on port 5016
+2024-09-18T05:16:41.210Z [test] info: listening on port 5016
+2024-09-18T05:16:43.855Z [test] info: listening on port 5016
+2024-09-18T05:16:49.565Z [test] info: listening on port 5016
+2024-09-18T05:16:54.913Z [test] info: listening on port 5016
+2024-09-18T05:16:56.790Z [test] info: listening on port 5016
+2024-09-18T05:17:07.874Z [test] info: listening on port 5016
+2024-09-18T05:17:16.000Z [test] info: listening on port 5016
+2024-09-18T05:17:55.666Z [test] info: listening on port 5016
+2024-09-18T05:22:22.194Z [test] info: listening on port 5016
