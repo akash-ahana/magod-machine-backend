@@ -1,5 +1,6 @@
 var mysql = require('mysql2');
 
+<<<<<<< HEAD
 var misConn = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -7,10 +8,31 @@ var misConn = mysql.createConnection({
     database: 'magodmis',
     dateStrings:true, 
     port:3306
+=======
+const dbHost = process.env.DB_HOST;
+const dbUser = process.env.DB_USER;
+const dbPort = process.env.DB_PORT;
+const dbPassword = process.env.DB_PASSWORD;
+const dbDatabase1 = process.env.DB_DATABASE_1; //magodmis
+const dbDatabase2 = process.env.DB_DATABASE_2; //magod_setup
+const dbDatabase3 = process.env.DB_DATABASE_3; //magodqtn
+const dbDatabase4 = process.env.DB_DATABASE_4; //machine_data
+const dbDatabase5 = process.env.DB_DATABASE_5; //magod_sales
+const dbDatabase6 = process.env.DB_DATABASE_6; //magod_mtrl
+const dbDatabase7 = process.env.DB_DATABASE_7;
+>>>>>>> 982633e717e9cb543bf387423e3159c17426da1a
 
+
+var misConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase1,
 });
 
 var setupConn = mysql.createConnection({
+<<<<<<< HEAD
     host: 'localhost',
     user: 'root',
     password: 'root',
@@ -67,6 +89,53 @@ var productionConn = mysql.createConnection({
     dateStrings:true,
     port:3306
 
+=======
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase2,
+});
+
+var qtnConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase3,
+});
+
+var mchConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase4,
+});
+
+var slsConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase5,
+});
+
+var mtrlConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase6,
+});
+
+var productionConn = mysql.createConnection({
+	host: dbHost,
+	user: dbUser,
+	port: dbPort,
+	password: dbPassword,
+	database: dbDatabase7,
+>>>>>>> 982633e717e9cb543bf387423e3159c17426da1a
 });
 
 let misQuery = async (q, callback) => {
