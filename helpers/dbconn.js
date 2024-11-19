@@ -1,14 +1,5 @@
 var mysql = require('mysql2');
 
-<<<<<<< HEAD
-var misConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'magodmis',
-    dateStrings:true, 
-    port:3306
-=======
 const dbHost = process.env.DB_HOST;
 const dbUser = process.env.DB_USER;
 const dbPort = process.env.DB_PORT;
@@ -20,7 +11,6 @@ const dbDatabase4 = process.env.DB_DATABASE_4; //machine_data
 const dbDatabase5 = process.env.DB_DATABASE_5; //magod_sales
 const dbDatabase6 = process.env.DB_DATABASE_6; //magod_mtrl
 const dbDatabase7 = process.env.DB_DATABASE_7;
->>>>>>> 982633e717e9cb543bf387423e3159c17426da1a
 
 
 var misConn = mysql.createConnection({
@@ -32,64 +22,6 @@ var misConn = mysql.createConnection({
 });
 
 var setupConn = mysql.createConnection({
-<<<<<<< HEAD
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'magod_setup',
-    dateStrings:true,  
-    port:3306
-
-});
-
-var qtnConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'magodqtn',
-    dateStrings:true,
-    port:3306
-});
-
-var mchConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password:  'root',
-    database: 'machine_data',
-    dateStrings:true,
-    port:3306
-
-});
-
-var slsConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'magod_sales',
-    dateStrings:true,
-    port:3306
-
-});
-
-var mtrlConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password:  'root',
-    database: 'magod_mtrl',
-    dateStrings:true,
-    port:3306
-
-});
-
-var productionConn = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password:  'root', 
-    database: 'magod_production',
-    dateStrings:true,
-    port:3306
-
-=======
 	host: dbHost,
 	user: dbUser,
 	port: dbPort,
@@ -135,7 +67,6 @@ var productionConn = mysql.createConnection({
 	port: dbPort,
 	password: dbPassword,
 	database: dbDatabase7,
->>>>>>> 982633e717e9cb543bf387423e3159c17426da1a
 });
 
 let misQuery = async (q, callback) => {
