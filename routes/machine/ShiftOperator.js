@@ -13,6 +13,7 @@ var bodyParser = require("body-parser");
 const moment = require("moment");
 const nodemailer = require('nodemailer');
 const { response } = require("express");
+const { Console } = require("winston/lib/winston/transports");
 
 // create application/json parser
 var jsonParser = bodyParser.json();
@@ -33,9 +34,61 @@ ShiftOperator.get("/getallMachines", async (req, res, next) => {
   }
 });
 
+
+// ShiftOperator.post("/getCurrentShiftDetails", async (req, res, next) => {
+//   try {
+//     const now = new Date();
+//     // Get current date and time
+//     const currentDate = new Date().toISOString().slice(0, 10); // Format as 'YYYY-MM-DD'
+//     const currentDateTime = `${now.toISOString().slice(0, 10)} ${now.toTimeString().split(' ')[0]}`;
+
+
+//     // Define the SQL query to get shifts for the current date
+//     const query = `
+//       SELECT *
+//       FROM magodmis.day_shiftregister
+//       WHERE ShiftDate = '${currentDate}';
+//     `;
+
+//     // Execute the query
+//     misQueryMod(query, (err, data) => {
+//       if (err) {
+//         logger.error(err);
+//         return res.status(500).send("Internal Server Error");
+//       }
+
+
+//       if (!data || data.length === 0) {
+//         // If no data is found for the current date, return a message
+//         return res.send("No shift data available for the current date.");
+//       }
+
+//       // Filter data to find entries where the current time is within fromtime and totime
+//       const currentShiftData = data.filter((shift) => {
+//         const fromTime = shift.FromTime;
+//         const toTime = shift.ToTime;
+
+//         // console.log("fromTime is",fromTime);
+//         // console.log("toTime  is",toTime);
+//         // Check if the current time falls within fromtime and totime range
+//         return currentDateTime >= fromTime && currentDateTime <= toTime;
+//       });
+
+//       // Send the resulting data or a message if no matching shift is found
+//       if (currentShiftData.length > 0) {
+//         res.send(currentShiftData);
+//       } else {
+//         res.send("No current shift matches the time range.");
+//       }
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+
 //get Shift Details
 ShiftOperator.post("/getShiftDetails", jsonParser, async (req, res, next) => {
-  // console.log("getShiftDetails",req.body);
   try {
     const { refName, ShiftDate, Shift } = req.body;
     misQueryMod(
@@ -513,7 +566,6 @@ ShiftOperator.post("/getShiftLog", jsonParser, async (req, res, next) => {
           console.log(error);
         } else {
           res.send(data);
-          console.log("ShiftLog Details",data)
         }
       }
     );
@@ -578,7 +630,6 @@ ShiftOperator.post(
   jsonParser,
   async (req, res, next) => {
 
-  console.log("req.body is",req.body);
     // Step 1: Execute the first query
     const firstQuery = `
     SELECT *
@@ -713,7 +764,6 @@ ShiftOperator.post(
   "/markAsRejectedProgramMaterial",
   jsonParser,
   async (req, res, next) => {
-    // console.log("req.body of reject", req.body);
 
     try {
       const { RejectedReason, selectedMtrlTable } = req.body;
@@ -723,10 +773,10 @@ ShiftOperator.post(
         const { ShapeMtrlID, NcPgmMtrlId } = row;
 
         // Check if the ShapeMtrlID exists in RejectedReason
-        if (RejectedReason[NcPgmMtrlId]) {
+        if (RejectedReason) {
           const updateQuery = `
           UPDATE magodmis.ncprogrammtrlallotmentlist n
-          SET n.Rejected = 1, n.RejectionReason = '${RejectedReason[NcPgmMtrlId]}'
+          SET n.Rejected = 1, n.RejectionReason = '${RejectedReason}'
           WHERE n.NcPgmMtrlId = '${NcPgmMtrlId}';
         `;
 
@@ -743,6 +793,7 @@ ShiftOperator.post(
     }
   }
 );
+
 
 //LoadMaterial Profile
 ShiftOperator.post("/loadMaterial", jsonParser, async (req, res, next) => {
@@ -868,6 +919,7 @@ ShiftOperator.post("/loadProgram", jsonParser, async (req, res, next) => {
   }
 });
 
+
 ///Used Production Report
 ShiftOperator.post(
   "/markAsUsedProductionReport",
@@ -879,51 +931,51 @@ ShiftOperator.post(
       const { selectdefaultRow, selectedMachine, selectProductionReport } = req.body;
 
       // Check if 'Operation' contains 'Tube Cutting'
-      const isTubeCutting = selectProductionReport.Operation.toLowerCase().includes('tube cutting'.toLowerCase());
+      const isTubeCutting = selectProductionReport.Operation?.toLowerCase().includes('tube cutting');
 
-      // console.log("isTubeCutting is",isTubeCutting);
+      // Ensure selectdefaultRow is an array
+      if (!Array.isArray(selectdefaultRow) || selectdefaultRow.length === 0) {
+        throw new Error("selectdefaultRow is empty or not an array.");
+      }
 
-      if (Array.isArray(selectdefaultRow)) {
-        for (const selectedRow of selectdefaultRow) {
-          const { NcPgmMtrlId, NcID } = selectedRow;
+      for (const selectedRow of selectdefaultRow) {
+        const { NcPgmMtrlId, NcID } = selectedRow;
 
-          // First Query
-          const updateQuery1 = `
-            UPDATE magodmis.ncprogrammtrlallotmentlist n
-            SET n.Used = true
-            WHERE n.NcPgmMtrlId = '${NcPgmMtrlId}';
+        // Check if essential values are defined
+        if (!NcPgmMtrlId || !NcID) {
+          throw new Error(`Missing NcPgmMtrlId or NcID in row: ${JSON.stringify(selectedRow)}`);
+        }
+
+        // First Query
+        const updateQuery1 = `
+          UPDATE magodmis.ncprogrammtrlallotmentlist n
+          SET n.Used = true
+          WHERE n.NcPgmMtrlId = '${NcPgmMtrlId}';
+        `;
+        console.log("Executing Query 1:", updateQuery1);
+        await executeQuery(updateQuery1);
+
+        // Second Query
+        const updateQuery2 = `
+          UPDATE magodmis.ncprograms
+          SET Qtycut = Qtycut + 1
+          WHERE Ncid = ${NcID};
+        `;
+        console.log("Executing Query 2:", updateQuery2);
+        await executeQuery(updateQuery2);
+
+        // Additional Query for non-Tube Cutting
+        if (!isTubeCutting) {
+          const updateQueryAdditional = `
+            UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
+            SET n.QtyCut = n1.qtycut * n.QtyNested
+            WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
           `;
-          // Execute the first query
-          await executeQuery(updateQuery1);
-
-          // Second Query
-          const updateQuery2 = `
-            UPDATE magodmis.ncprograms
-            SET Qtycut = Qtycut + 1
-            WHERE Ncid = ${NcID};
-          `;
-          // Execute the second query
-          await executeQuery(updateQuery2);
-
-          // Additional Query based on 'Operation'
-          let updateQueryAdditional;
-          if (isTubeCutting) {
-            updateQueryAdditional = `
-              UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
-              SET n.QtyCut = n.QtyNested
-              WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
-            `;
-          } else {
-            updateQueryAdditional = `
-              UPDATE magodmis.ncprogram_partslist n, magodmis.ncprograms n1
-              SET n.QtyCut = n1.qtycut * n.QtyNested
-              WHERE n.Ncid = n1.Ncid AND n1.NCId = ${NcID};
-            `;
-          }
-          // Execute the additional query
+          console.log("Executing Additional Query:", updateQueryAdditional);
           await executeQuery(updateQueryAdditional);
         }
       }
+
       // Commit the transaction if all queries succeed
       await executeQuery("COMMIT");
       res.send("All queries executed successfully.");
@@ -931,8 +983,7 @@ ShiftOperator.post(
       // Rollback the transaction if there's an error
       await executeQuery("ROLLBACK");
 
-      logger.error(error);
-      console.log(error); // Log the error
+      console.error("Error executing queries:", error);
       res.status(500).send("Internal Server Error");
     }
   }
@@ -945,7 +996,6 @@ ShiftOperator.post(
   "/markAsRejectedProductionReport",
   jsonParser,
   async (req, res, next) => {
-    // console.log("Reason", req.body);
 
     try {
       const { RejectedReason, selectdefaultRow } = req.body;
@@ -958,10 +1008,10 @@ ShiftOperator.post(
           const { NcPgmMtrlId } = selectedRow;
 
           // Check if the NcPgmMtrlId exists in RejectedReason
-          if (RejectedReason[NcPgmMtrlId]) {
+          if (RejectedReason) {
             const updateQuery = `
             UPDATE magodmis.ncprogrammtrlallotmentlist n
-            SET n.Rejected = 1, n.RejectionReason = '${RejectedReason[NcPgmMtrlId]}'
+            SET n.Rejected = 1, n.RejectionReason = '${RejectedReason}'
             WHERE n.NcPgmMtrlId = '${NcPgmMtrlId}';
           `;
 
@@ -1049,41 +1099,45 @@ ShiftOperator.post("/getprogramParts", jsonParser, async (req, res, next) => {
 
 ////Proram Parts(MiddleSection)
 ShiftOperator.post("/SaveprogramParts", jsonParser, async (req, res, next) => {
-  // console.log("SaveprogramParts",req.body);
   try {
     const programPartsData = req.body.programPartsData;
-    const responses = []; // Array to store responses
+    const responses = [];
 
-    // Iterate over each item in programPartsData
     for (const part of programPartsData) {
-      const NC_Pgme_Part_ID = part.NC_Pgme_Part_ID;
-      const QtyRejected = part.QtyRejected;
-      const Remarks = part.Remarks;
+      const { NC_Pgme_Part_ID, QtyRejected, Remarks, processnow,QtyCut } = part;
 
-      // Execute the SQL query for each item
-      mchQueryMod(
-        `UPDATE Magodmis.Ncprogram_partslist SET QtyRejected ='${QtyRejected}', Remarks='${Remarks}' WHERE NC_Pgme_part_Id='${NC_Pgme_Part_ID}';`,
-        (err, data) => {
-          if (err) {
-            logger.error(err);
-            responses.push({ error: err }); // Store error response
-          } else {
-            responses.push({ success: data }); // Store success response
-          }
+      // Skip execution if processnow is 0 or undefined
+      if (!processnow || processnow === 0) {
+        // console.log(`Skipping NC_Pgme_Part_ID: ${NC_Pgme_Part_ID} as processnow is 0 or undefined`);
+        continue;
+      }
 
-          // Check if all queries have been executed
-          if (responses.length === programPartsData.length) {
-            // Send response after all queries are executed
-            res.send(responses);
-          }
+      // Build and log the query if processnow is valid
+      const query = `
+        UPDATE magodmis.ncprogram_partslist
+        SET QtyRejected = '${QtyRejected}', Remarks = '${Remarks}', QtyCut = '${QtyCut}'
+        WHERE NC_Pgme_part_Id = '${NC_Pgme_Part_ID}';
+      `;
+
+      // Execute the query
+      mchQueryMod(query, (err, data) => {
+        if (err) {
+          logger.error(err);
+          responses.push({ error: err });
+        } else {
+          responses.push({ success: data });
         }
-      );
+
+        // Check if all queries have been handled
+        if (responses.length === programPartsData.filter(p => p.processnow && p.processnow !== 0).length) {
+          res.send(responses);
+        }
+      });
     }
   } catch (error) {
     next(error);
   }
 });
-
 
 
 //Program  Reports Part Details Save Button
@@ -2005,7 +2059,7 @@ ShiftOperator.post("/getNcProgramId", jsonParser, async (req, res, next) => {
   }
 });
 
-//Service Mark as Used
+
 ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
   try {
     const { sendobject } = req.body;
@@ -2021,7 +2075,6 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
 
       // Execute the first query
       await executeUpdateQuery(updateQuery1);
-      console.log("updateQuery1 is",updateQuery1);
 
       // Aggregate the total issuesetsNumber for later use in updateQuery4
       totalIssuesetsNumber += Number(obj.issuesets);
@@ -2037,25 +2090,26 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
 
     const updateQuery3 = `UPDATE magodmis.ncprograms n
                           SET n.QtyCut=n.QtyCut + ${sendobject[0].issuesets}
-                          WHERE n.Ncid='${sendobject[0].NcId}';`;
+                          WHERE n.Ncid='${sendobject[0].NcId}'`;
 
     // Execute the second and third queries
     await executeUpdateQuery(updateQuery2);
     await executeUpdateQuery(updateQuery3);
 
-    console.log("updateQuery2 is",updateQuery2);
-    console.log("updateQuery3 is",updateQuery3);
 
 
     // Now execute updateQuery4 once using the aggregated issuesetsNumber
     let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s
-                        SET s.QtyUsed=s.QtyUsed+${sendobject[0].issuesets}
-                        WHERE s.IssueID=${sendobject[0].IV_ID};`;
+                        SET s.QtyUsed=s.QtyUsed+${sendobject[0].issuesets}`;
+
+                        console.log("updateQuery4 is",updateQuery4);
 
     // Check if any of the objects have QtyIssued === QtyUsed and update the status
     if (sendobject.some((obj) => obj.QtyIssued === obj.QtyUsed)) {
       updateQuery4 += `, s.Status='Closed'`;
     }
+
+    updateQuery4 += ` WHERE s.IssueID=${sendobject[0].IV_ID};`;
 
     // Execute the fourth query
     await executeUpdateQuery(updateQuery4);
@@ -2067,6 +2121,7 @@ ShiftOperator.post("/ServicemarkasUsed", jsonParser, async (req, res, next) => {
     next(error);
   }
 });
+
 
 // Function to execute an update query
 function executeUpdateQuery(query) {
@@ -2088,36 +2143,39 @@ function executeUpdateQuery(query) {
 ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
   try {
     const { sendobject } = req.body;
+    console.log("sendobject",sendobject);
 
     // Disable safe updates for the current session
     await executeUpdateQuery("SET SQL_SAFE_UPDATES = 0");
 
     // Initialize a variable to store the total issuesetsNumber for updateQuery4
     let totalIssuesetsNumber = 0;
-    let issueID = null; // To store IV_ID, assuming it's the same for all objects
+    let issueID = null;
 
     // Use a Promise to execute the updates sequentially for each object
     const updatePromises = sendobject.map(async (obj) => {
       // First update query
       const updateQuery1 = `UPDATE magodmis.shopfloor_bom_issuedetails s, magodmis.mtrl_part_receipt_details m
-                            SET s.QtyReturned=s.QtyReturned+${obj.useNow}
+                            SET s.QtyReturned=s.QtyReturned+${obj.ReturnNow}
                             WHERE m.Id=s.PartReceipt_DetailsID AND s.Id=${obj.Id};`;
 
       // Execute the first query
       await executeUpdateQuery(updateQuery1);
+      console.log("updateQuery1 is",updateQuery1);
 
       // Aggregate issuesetsNumber and store IV_ID for later use
       totalIssuesetsNumber += Number(obj.issuesets);
       issueID = obj.IV_ID;
 
       // Check if the additional query is needed (close status)
-      if (obj.QtyIssued === obj.QtyUsed + obj.QtyReturned) {
-        let closeQuery = `UPDATE magodmis.shopfloor_part_issueregister s 
-                          SET s.Status='Closed' 
-                          WHERE s.IssueID=${obj.IV_ID};`;
-        await executeUpdateQuery(closeQuery);
-      }
+      // if (obj.QtyIssued === obj.QtyUsed + obj.QtyReturned) {
+      //   let closeQuery = `UPDATE magodmis.shopfloor_part_issueregister s 
+      //                     SET s.Status='Closed' 
+      //                     WHERE s.IssueID=${obj.IV_ID};`;
+      //   await executeUpdateQuery(closeQuery);
+      // }
     });
+    // console.log("updatecloseQueryQuery1 is",closeQuery);
 
     // Wait for all the queries in the loop to complete
     await Promise.all(updatePromises);
@@ -2125,8 +2183,9 @@ ShiftOperator.post("/markasReturned", jsonParser, async (req, res, next) => {
     // Now execute updateQuery4 once using the aggregated issuesetsNumber
     if (issueID !== null) {
       let updateQuery4 = `UPDATE magodmis.shopfloor_part_issueregister s 
-                          SET s.QtyReturned=s.QtyReturned+${sendobject[0].issuesets} 
+                          SET s.QtyReturned=s.QtyReturned+${sendobject[0].ReturnNow} 
                           WHERE s.IssueID=${sendobject[0].IV_ID};`;
+
 
       // Execute the fourth query outside the loop
       await executeUpdateQuery(updateQuery4);
@@ -2147,7 +2206,7 @@ function executeUpdateQuery(query) {
   return new Promise((resolve, reject) => {
     misQueryMod(query, (err, result) => {
       if (err) {
-        console.error("Query execution error:", err); // Enhanced error logging
+        console.error("Query execution error:", err); 
         reject(err);
       } else {
         resolve(result);
@@ -2157,14 +2216,11 @@ function executeUpdateQuery(query) {
 }
 
 
-
-
 //middletable data after yes/no
 ShiftOperator.post(
   "/ServiceAfterpageOpen",
   jsonParser,
   async (req, res, next) => {
-    // console.log("test request", req.body)
     try {
       const machineName = req.body.selectshifttable.Machine;
 
@@ -2193,7 +2249,7 @@ ShiftOperator.post(
             const firstQuery = `
             SELECT *
             FROM magodmis.shopfloor_part_issueregister
-            WHERE magodmis.shopfloor_part_issueregister.NC_ProgramNo = '${ncProgramNo}' AND magodmis.shopfloor_part_issueregister.Status = 'Created'
+            WHERE magodmis.shopfloor_part_issueregister.NC_ProgramNo = '${ncProgramNo}'
           `;
 
             try {
@@ -2347,6 +2403,7 @@ ShiftOperator.post(
     }
   }
 );
+
 
 //getNCID for validation
 ShiftOperator.post("/getNCId", jsonParser, async (req, res, next) => {
